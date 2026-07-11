@@ -1,0 +1,59 @@
+======================================================================
+                  DETAILED PERFORMANCE ANALYSIS REPORT
+======================================================================
+
+Instrument: NSE|NIFTY 50 (std=2.5, min_score=4)
+--------------------------------------------------
+  Ending Balance:       Rs. 103,334.01
+  Net PnL:              Rs. +3,334.01
+  Total Closed Trades:  20
+  Win Rate:             45.0% (9 W | 11 L)
+  Profit Factor:        1.27
+  Avg Win:              Rs. 1,738.58
+  Avg Loss:             Rs. -1,119.38
+  Max Win:              Rs. 6,473.03
+  Max Loss:             Rs. -2,485.71
+  Avg Holding Time:     11.1 minutes
+  Max Drawdown:         0.00%
+
+Instrument: NSE|NIFTY BANK (std=2.5, min_score=4)
+--------------------------------------------------
+  Ending Balance:       Rs. 115,641.81
+  Net PnL:              Rs. +15,641.81
+  Total Closed Trades:  41
+  Win Rate:             48.8% (20 W | 21 L)
+  Profit Factor:        1.91
+  Avg Win:              Rs. 1,642.52
+  Avg Loss:             Rs. -819.46
+  Max Win:              Rs. 5,285.25
+  Max Loss:             Rs. -1,504.58
+  Avg Holding Time:     108.7 minutes
+  Max Drawdown:         0.00%
+
+Instrument: NSE|NIFTY FINANCIAL SERVICES (std=2.5, min_score=6)
+--------------------------------------------------
+  Ending Balance:       Rs. 99,246.04
+  Net PnL:              Rs. -753.96
+  Total Closed Trades:  2
+  Win Rate:             50.0% (1 W | 1 L)
+  Profit Factor:        0.40
+  Avg Win:              Rs. 502.40
+  Avg Loss:             Rs. -1,256.36
+  Max Win:              Rs. 502.40
+  Max Loss:             Rs. -1,256.36
+  Avg Holding Time:     2.0 minutes
+  Max Drawdown:         0.00%
+
+Instrument: BSE|SENSEX (std=1.5, min_score=5)
+--------------------------------------------------
+  Ending Balance:       Rs. 101,761.67
+  Net PnL:              Rs. +1,761.67
+  Total Closed Trades:  13
+  Win Rate:             53.8% (7 W | 6 L)
+  Profit Factor:        2.47
+  Avg Win:              Rs. 422.34
+  Avg Loss:             Rs. -199.11
+  Max Win:              Rs. 764.03
+  Max Loss:             Rs. -467.79
+  Avg Holding Time:     95.1 minutes
+  Max Drawdown:         0.00%

@@ -1,0 +1,19 @@
+{
+    "metrics": {
+        "balance": 100000.0,
+        "nav": 100000.0,
+        "realized_pnl": 0.0,
+        "unrealized_pnl": 0.0,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "win_rate": 0.0,
+        "max_drawdown": 0.0,
+        "active_position_desc": "FLAT",
+        "active_qty": 0,
+        "active_scrip": null,
+        "gross_profit": 0.0,
+        "gross_loss": 0.0,
+        "safety_alert": null
+    },
+    "orders": []
+}
