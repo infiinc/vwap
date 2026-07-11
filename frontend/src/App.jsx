@@ -10,6 +10,11 @@ import OptionChain from './components/OptionChain';
 import BacktestPanel from './components/BacktestPanel';
 import './App.css';
 
+// API configuration: defaults to live Render, with fallback to localhost if running locally
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const BASE_URL = isLocal ? 'http://127.0.0.1:8000' : 'https://leo-vwap.onrender.com';
+const WS_URL = isLocal ? 'ws://127.0.0.1:8000' : 'wss://leo-vwap.onrender.com';
+
 const getSourceBadge = (source) => {
   const src = (source || 'REALTIME').toUpperCase();
   if (src === 'LIVE' || src === 'REALTIME') {
@@ -295,7 +300,7 @@ export default function App() {
   useEffect(() => {
     const connectWS = () => {
       console.log('Connecting to websocket...');
-      const ws = new WebSocket('ws://127.0.0.1:8000/ws');
+      const ws = new WebSocket(`${WS_URL}/ws`);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -533,7 +538,7 @@ export default function App() {
     setOptionChainLoading(true);
     setOptionChainError('');
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/fyers/option_chain');
+      const res = await fetch(`${BASE_URL}/api/fyers/option_chain`);
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         const rawChain = data.data.optionsChain || [];
@@ -578,7 +583,7 @@ export default function App() {
   // REST API Actions
   const handleUpdateConfig = async (newConfig) => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/config', {
+      const res = await fetch(`${BASE_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -595,7 +600,7 @@ export default function App() {
 
   const handleResetSimulation = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/sim/reset', { method: 'POST' });
+      const res = await fetch(`${BASE_URL}/api/sim/reset`, { method: 'POST' });
       if (res.ok) {
         setOrders([]);
         setActiveOptionSignal(null);
@@ -652,7 +657,7 @@ export default function App() {
 
   const handleTriggerMockSignal = async (signalType) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/sim/trigger_signal?signal_type=${signalType}`, {
+      const res = await fetch(`${BASE_URL}/api/sim/trigger_signal?signal_type=${signalType}`, {
         method: 'POST'
       });
       if (!res.ok) {
@@ -668,7 +673,7 @@ export default function App() {
       setOrders([]);
       setCandles([]);
       setActiveOptionSignal(null);
-      const res = await fetch('http://127.0.0.1:8000/api/backtest', {
+      const res = await fetch(`${BASE_URL}/api/backtest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

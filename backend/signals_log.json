@@ -214,5 +214,86 @@
             "Green Candle": true,
             "VWAP Band Support": true
         }
+    },
+    {
+        "time": "00:39:54",
+        "date": "2026-07-12",
+        "timestamp": 1783796994,
+        "expiry": "16-Jul-2026",
+        "source": "SIMULATION",
+        "signal_type": "BEARISH",
+        "contract_name": "NIFTY 50 36500 PE",
+        "option_type": "Put Option (PE)",
+        "spot_price": 36502.59,
+        "spot_sl": 38428.36,
+        "spot_tp": 33292.96,
+        "opt_entry": 1.0,
+        "opt_sl": 1.0,
+        "opt_tp": 1.0,
+        "atr": 1283.85,
+        "checklist_score": 4,
+        "checklist_details": {
+            "VWAP Position": false,
+            "EMA Separation": false,
+            "RSI Trend": true,
+            "Volume Spike": false,
+            "EMA Trend": true,
+            "Red Candle": true,
+            "VWAP Band Resistance": true
+        }
+    },
+    {
+        "time": "00:41:07",
+        "date": "2026-07-12",
+        "timestamp": 1783797067,
+        "expiry": "16-Jul-2026",
+        "source": "SIMULATION",
+        "signal_type": "BEARISH",
+        "contract_name": "NIFTY BANK 50000 PE",
+        "option_type": "Put Option (PE)",
+        "spot_price": 49962.28,
+        "spot_sl": 50218.94,
+        "spot_tp": 49534.5,
+        "opt_entry": 275.58,
+        "opt_sl": 146.5,
+        "opt_tp": 490.8,
+        "atr": 171.11,
+        "checklist_score": 4,
+        "checklist_details": {
+            "VWAP Position": true,
+            "EMA Separation": true,
+            "RSI Trend": true,
+            "Volume Spike": false,
+            "EMA Trend": true,
+            "Red Candle": false,
+            "VWAP Band Resistance": false
+        }
+    },
+    {
+        "time": "00:53:45",
+        "date": "2026-07-12",
+        "timestamp": 1783797825,
+        "expiry": "16-Jul-2026",
+        "source": "SIMULATION",
+        "signal_type": "BEARISH",
+        "contract_name": "SENSEX 77300 PE",
+        "option_type": "Put Option (PE)",
+        "spot_price": 77310.23,
+        "spot_sl": 77736.8,
+        "spot_tp": 76599.28,
+        "opt_entry": 392.49,
+        "opt_sl": 189.0,
+        "opt_tp": 731.6,
+        "atr": 284.38,
+        "checklist_score": 5,
+        "checklist_details": {
+            "VWAP Position": true,
+            "EMA Separation": true,
+            "RSI Trend": true,
+            "Volume Spike": false,
+            "EMA Trend": true,
+            "Red Candle": true,
+            "VWAP Band Resistance": false
+        }
     }
 ]
