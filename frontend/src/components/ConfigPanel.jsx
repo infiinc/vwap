@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Settings, Sliders, Shield, Play, RefreshCw } from 'lucide-react';
 
-export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation, onRunBacktest }) {
+export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation, onRunBacktest, baseUrl = 'http://127.0.0.1:8000' }) {
   const [showCredsModal, setShowCredsModal] = useState(false);
   const [showFyersModal, setShowFyersModal] = useState(false);
   const [backtestDays, setBacktestDays] = useState(1);
@@ -15,7 +15,7 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
   const [fyersCreds, setFyersCreds] = useState({
     client_id: '',
     secret_key: '',
-    redirect_uri: 'http://127.0.0.1:8000/api/fyers/callback',
+    redirect_uri: `${baseUrl}/api/fyers/callback`,
     auth_code: ''
   });
   
@@ -44,7 +44,7 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
     setLoginLoading(true);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/shoonya/login', {
+      const res = await fetch(`${baseUrl}/api/shoonya/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(creds),
@@ -72,7 +72,7 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
     }
     setFyersError('');
     try {
-      const url = `http://127.0.0.1:8000/api/fyers/authurl?client_id=${encodeURIComponent(fyersCreds.client_id)}&secret_key=${encodeURIComponent(fyersCreds.secret_key)}&redirect_uri=${encodeURIComponent(fyersCreds.redirect_uri)}`;
+      const url = `${baseUrl}/api/fyers/authurl?client_id=${encodeURIComponent(fyersCreds.client_id)}&secret_key=${encodeURIComponent(fyersCreds.secret_key)}&redirect_uri=${encodeURIComponent(fyersCreds.redirect_uri)}`;
       const res = await fetch(url);
       const data = await res.json();
       if (res.ok && data.url) {
@@ -92,7 +92,7 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
     setFyersLoading(true);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/fyers/login', {
+      const res = await fetch(`${baseUrl}/api/fyers/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fyersCreds),
@@ -503,7 +503,7 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
                 <input
                   type="text"
                   required
-                  placeholder="http://127.0.0.1:8000/api/fyers/callback"
+                  placeholder={`${baseUrl}/api/fyers/callback`}
                   value={fyersCreds.redirect_uri}
                   onChange={(e) => setFyersCreds({ ...fyersCreds, redirect_uri: e.target.value })}
                   className="input-glow-style"

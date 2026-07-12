@@ -900,6 +900,7 @@ export default function App() {
             onUpdateConfig={handleUpdateConfig}
             onResetSimulation={handleResetSimulation}
             onRunBacktest={handleRunBacktest}
+            baseUrl={BASE_URL}
           />
         </section>
 
@@ -1425,7 +1426,7 @@ export default function App() {
         <SignalsLedger signals={signalsHistory} />
       )}
       {currentPage === 'backtest' && (
-        <BacktestPanel theme={theme} />
+        <BacktestPanel theme={theme} baseUrl={BASE_URL} />
       )}
 
       {/* Floating Glassmorphic Toasts Container */}

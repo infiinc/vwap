@@ -23,7 +23,7 @@ const SCRIP_DISPLAY_NAMES = {
   'BSE|SENSEX': 'BSE Sensex'
 };
 
-export default function BacktestPanel({ theme = 'oceanic' }) {
+export default function BacktestPanel({ theme = 'oceanic', baseUrl = 'http://127.0.0.1:8000' }) {
   // Dhan Fetch Form State
   const [dhanCreds, setDhanCreds] = useState({
     clientId: '',
@@ -70,7 +70,7 @@ export default function BacktestPanel({ theme = 'oceanic' }) {
 
   const fetchCsvFiles = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/backtest/csv_files');
+      const res = await fetch(`${baseUrl}/api/backtest/csv_files`);
       const data = await res.json();
       if (res.ok && data.files) {
         setCsvFiles(data.files);
@@ -247,7 +247,7 @@ export default function BacktestPanel({ theme = 'oceanic' }) {
     }
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/dhan/fetch_data', {
+      const res = await fetch(`${baseUrl}/api/dhan/fetch_data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -335,7 +335,7 @@ export default function BacktestPanel({ theme = 'oceanic' }) {
     setBacktestResults(null);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/backtest/run_offline', {
+      const res = await fetch(`${baseUrl}/api/backtest/run_offline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
