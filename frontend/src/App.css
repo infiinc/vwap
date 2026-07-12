@@ -1676,5 +1676,158 @@ input:checked + .slider-round:before {
   }
 }
 
+/* ==========================================
+   MOBILE BOTTOM NAVIGATION & TABBED VIEW
+   ========================================== */
+
+.mobile-main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 4px;
+}
+
+/* Mobile Chart Tabs Bar */
+.mobile-chart-tabs-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 8px;
+}
+
+.mobile-chart-tabs-bar button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 8px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+  outline: none;
+}
+
+.mobile-chart-tabs-bar button.active {
+  background: var(--bg-tertiary);
+  color: var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Mobile Chart Viewport */
+.mobile-chart-viewport {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.mobile-chart-wrapper {
+  background: transparent;
+}
+
+.mobile-price {
+  font-family: 'Consolas', monospace;
+  font-size: 0.95rem;
+  color: var(--accent-gold);
+}
+
+.mobile-price.CE {
+  color: var(--accent-green);
+}
+
+.mobile-price.PE {
+  color: var(--accent-gold);
+}
+
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 62px;
+  background: rgba(10, 15, 26, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-bottom-nav button {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  gap: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 100%;
+  outline: none;
+}
+
+.mobile-bottom-nav button svg {
+  transition: transform 0.2s ease;
+}
+
+.mobile-bottom-nav button.active {
+  color: var(--accent-gold);
+}
+
+.mobile-bottom-nav button.active svg {
+  transform: translateY(-2px) scale(1.1);
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4));
+}
+
+.mobile-bottom-nav-spacer {
+  height: 75px;
+  width: 100%;
+}
+
+/* Premium LEO Brand Styles */
+.logo-glow {
+  position: relative;
+  overflow: visible;
+  transition: transform 0.3s ease;
+  border-radius: 8px;
+}
+
+.logo-glow:hover {
+  transform: scale(1.05);
+}
+
+/* Fix mobile modal forms */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+  .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 12px !important;
+    padding: 15px !important;
+  }
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
+
 
 

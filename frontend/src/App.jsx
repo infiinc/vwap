@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Zap, TrendingUp, Activity, ShoppingBag, Sliders, Target, ShieldAlert } from 'lucide-react';
+import { Zap, TrendingUp, Activity, ShoppingBag, Sliders, Target, ShieldAlert, List, FileText, BarChart2 } from 'lucide-react';
 import RealTimeChart from './components/RealTimeChart';
 import ConfigPanel from './components/ConfigPanel';
 import WatchList from './components/WatchList';
@@ -161,6 +161,28 @@ export default function App() {
   const [wsConnected, setWsConnected] = useState(false);
   const [unreadSignals, setUnreadSignals] = useState(0);
   const [toasts, setToasts] = useState([]);
+  const [activeMobileTab, setActiveMobileTab] = useState('desk'); // 'desk' | 'watch' | 'greeks' | 'ledger' | 'backtest'
+  const [activeMobileChart, setActiveMobileChart] = useState('spot'); // 'spot' | 'ce' | 'pe'
+  const [isMobileView, setIsMobileView] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleMobileTabChange = (tab) => {
+    setActiveMobileTab(tab);
+    if (tab === 'ledger') {
+      setCurrentPage('ledger');
+    } else if (tab === 'backtest') {
+      setCurrentPage('backtest');
+    } else {
+      setCurrentPage('desk');
+    }
+  };
   
   const wsRef = useRef(null);
 
@@ -720,97 +742,314 @@ export default function App() {
     return val.toLocaleString('en-IN');
   };
   
+  // Mobile and Desktop reusable widget JSX
+  const activeTicketJsx = (
+    <div className="glass-card sidebar-widget">
+      <div className="widget-header">
+        <Target size={14} className="widget-icon green" style={{ color: 'var(--accent-green)' }} />
+        <h4>Active Signal Ticket</h4>
+      </div>
+
+      {activeOptionSignal ? (
+        <div className={`signal-ticket active ${activeOptionSignal.signal_type.toLowerCase()}`}>
+          <div className="ticket-badge-row">
+            <span className={`ticket-badge ${activeOptionSignal.signal_type.toLowerCase()}`}>
+              {activeOptionSignal.signal_type === 'BULLISH' ? '🟢 BUY CALL (CE)' : '🔴 BUY PUT (PE)'}
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span className="ticket-time" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                {activeOptionSignal.date ? `${formatSignalDate(activeOptionSignal.date)} ` : ''}
+                {activeOptionSignal.time}
+              </span>
+              <span className="ticket-elapsed-time" style={{ color: getElapsedColor() }}>
+                {getElapsedString()}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+            <div className="ticket-contract-name" style={{ margin: 0 }}>
+              {activeOptionSignal.contract_name}
+            </div>
+            {(() => {
+              const badge = getSourceBadge(activeOptionSignal.source);
+              return (
+                <span style={{
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '0.6rem',
+                  fontWeight: '800',
+                  whiteSpace: 'nowrap',
+                  ...badge.style
+                }}>
+                  {badge.text}
+                </span>
+              );
+            })()}
+          </div>
+
+          <div className="ticket-expiry-row" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', gap: '5px' }}>
+            <span>Expiry:</span>
+            <strong style={{ color: 'var(--text-main)' }}>{activeOptionSignal.expiry || '—'}</strong>
+          </div>
+
+          <div className="ticket-metrics-grid">
+            <div className="ticket-metric">
+              <span className="m-label">EST. ENTRY</span>
+              <span className="m-val">₹{activeOptionSignal.opt_entry.toFixed(1)}</span>
+            </div>
+            <div className="ticket-metric">
+              <span className="m-label">TARGET</span>
+              <span className="m-val green-val">₹{activeOptionSignal.opt_tp.toFixed(1)}</span>
+            </div>
+            <div className="ticket-metric">
+              <span className="m-label">STOP LOSS</span>
+              <span className="m-val red-val">₹{activeOptionSignal.opt_sl.toFixed(1)}</span>
+            </div>
+          </div>
+
+          {/* Checklist Breakdown */}
+          {activeOptionSignal.checklist_details && (
+            <div className="ticket-checklist">
+              <div className="checklist-title">Checklist ({activeOptionSignal.checklist_score}/7 Met):</div>
+              <div className="checklist-items-grid">
+                {Object.entries(activeOptionSignal.checklist_details).map(([condName, passed]) => (
+                  <div key={condName} className={`checklist-item-dot ${passed ? 'passed' : 'failed'}`} title={condName}>
+                    <span className="dot"></span>
+                    <span className="label">{condName.split(' ')[0]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : blockedSignal ? (
+        <div className="signal-ticket blocked" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="ticket-badge-row">
+            <span className="ticket-badge warning">
+              ⚠️ Setup Blocked
+            </span>
+            <button onClick={() => setBlockedSignal(null)} className="dismiss-btn">Dismiss</button>
+          </div>
+          <div className="ticket-contract-name font-warning" style={{ fontSize: '0.82rem', fontWeight: 'bold' }}>
+            {blockedSignal.contract_name} Setup Filtered
+          </div>
+          <p className="blocked-reasons-text" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: 0 }}>
+            Reasons: {blockedSignal.reasons.join(', ')}
+          </p>
+        </div>
+      ) : (
+        <div className="signal-ticket empty">
+          <div className="radar-animation">
+            <div className="radar-circle circle-1"></div>
+            <div className="radar-circle circle-2"></div>
+            <div className="radar-circle circle-3"></div>
+            <Activity size={24} className="radar-icon" />
+          </div>
+          <h5>Scanning Market Data</h5>
+          <p>Monitoring {config.active_scrip.split('|')[1]} spot price against VWAP bands...</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const recentSignalsJsx = (
+    <div className="glass-card sidebar-widget">
+      <div className="widget-header">
+        <Activity size={14} className="widget-icon gold" style={{ color: 'var(--accent-gold)' }} />
+        <h4>Recent Signals (Top 3)</h4>
+        <button 
+          onClick={() => {
+            if (isMobileView) {
+              handleMobileTabChange('ledger');
+            } else {
+              setCurrentPage('ledger');
+            }
+          }}
+          style={{ 
+            marginLeft: 'auto', 
+            fontSize: '0.7rem', 
+            color: 'var(--accent-gold)', 
+            background: 'none', 
+            border: 'none', 
+            cursor: 'pointer', 
+            fontWeight: 'bold',
+            outline: 'none'
+          }}
+        >
+          View Ledger ➔
+        </button>
+      </div>
+      
+      <div className="recent-signals-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+        {signalsHistory.slice(0, 3).map((sig, idx) => {
+          const isBull = sig.signal_type === 'BULLISH';
+          return (
+            <div 
+              key={idx}
+              onClick={() => {
+                setActiveOptionSignal(sig);
+                if (isMobileView) {
+                  setActiveMobileTab('desk');
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 10px',
+                background: isBull ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 68, 85, 0.04)',
+                border: '1px solid ' + (isBull ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 68, 85, 0.12)'),
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              className="recent-signal-row"
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                  {sig.contract_name}
+                </span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  Trigger: <strong style={{ color: 'var(--text-main)' }}>₹{sig.opt_entry.toFixed(1)}</strong> | Time: {sig.time}
+                </span>
+              </div>
+              
+              <span style={{
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: isBull ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                color: isBull ? 'var(--accent-green)' : 'var(--accent-red)',
+                fontSize: '0.65rem',
+                fontWeight: '900',
+              }}>
+                {sig.signal_type === 'BULLISH' ? 'BUY CE' : 'BUY PE'}
+              </span>
+            </div>
+          );
+        })}
+        {signalsHistory.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '15px', color: 'var(--text-dark)', fontSize: '0.75rem' }}>
+            No signals generated today yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+  
   return (
-    <div className={`dashboard-container ${currentPage === 'ledger' ? 'ledger-view' : ''}`}>
+    <div className={`dashboard-container ${currentPage === 'ledger' ? 'ledger-view' : ''} ${isMobileView ? 'mobile-view' : ''}`}>
       {/* Header */}
       <header className="dashboard-header">
         <div className="brand-section">
-          <div className="logo-glow">Ω</div>
+          <div className="logo-glow" style={{ padding: '2px', background: 'transparent' }}>
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%', display: 'block' }}>
+              <path d="M50 10 L65 25 L80 15 L75 35 L90 40 L78 52 L85 70 L68 70 L70 90 L50 80 L30 90 L32 70 L15 70 L22 52 L10 40 L25 35 L20 15 L35 25 Z" fill="url(#mane-grad)" opacity="0.85" />
+              <path d="M50 25 L62 42 L60 62 L50 72 L40 62 L38 42 Z" fill="#030712" stroke="url(#gold-grad)" strokeWidth="2.5" />
+              <path d="M43 45 L47 47 L46 49 Z" fill="var(--accent-green)" />
+              <path d="M57 45 L53 47 L54 49 Z" fill="var(--accent-green)" />
+              <path d="M50 56 L47 52 L53 52 Z" fill="url(#gold-grad)" />
+              <path d="M50 56 V62 M50 62 C48 62 46 61 45 60 M50 62 C52 62 54 61 55 60" stroke="url(#gold-grad)" strokeWidth="1.5" />
+              <defs>
+                <linearGradient id="mane-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="var(--accent-gold)" />
+                  <stop offset="50%" stopColor="#b45309" />
+                  <stop offset="100%" stopColor="var(--accent-blue)" />
+                </linearGradient>
+                <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fef08a" />
+                  <stop offset="100%" stopColor="var(--accent-gold)" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
           <div className="title-section">
-            <h1>VWAP Quantum Trading Dashboard</h1>
-            <p>Real-time Volume Weighted Average Price algorithmic strategies</p>
+            <h1>LEO vwap option</h1>
+            <p>Algorithmic Intraday Options Strategy Dashboard</p>
           </div>
         </div>
 
         {/* Page Switcher Navigation */}
-        <div className="page-switcher-nav" style={{ display: 'flex', gap: '8px', background: 'rgba(0, 0, 0, 0.2)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)', height: '38px', alignItems: 'center' }}>
-          <button 
-            onClick={() => setCurrentPage('desk')} 
-            className={`nav-btn ${currentPage === 'desk' ? 'active' : ''}`}
-            style={{
-              background: currentPage === 'desk' ? 'var(--bg-tertiary)' : 'none',
-              border: 'none',
-              color: currentPage === 'desk' ? 'var(--accent-gold)' : 'var(--text-muted)',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              outline: 'none'
-            }}
-          >
-            📊 Trading Desk
-          </button>
-          <button 
-            onClick={() => setCurrentPage('ledger')} 
-            className={`nav-btn ${currentPage === 'ledger' ? 'active' : ''}`}
-            style={{
-              background: currentPage === 'ledger' ? 'var(--bg-tertiary)' : 'none',
-              border: 'none',
-              color: currentPage === 'ledger' ? 'var(--accent-gold)' : 'var(--text-muted)',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              outline: 'none'
-            }}
-          >
-            📜 Signals Ledger
-            {unreadSignals > 0 && (
-              <span style={{
-                background: 'var(--accent-gold)',
-                color: '#000000',
-                padding: '1px 5px',
-                borderRadius: '8px',
-                fontSize: '0.62rem',
-                fontWeight: '900',
-                lineHeight: 1
-              }}>
-                {unreadSignals}
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={() => setCurrentPage('backtest')} 
-            className={`nav-btn ${currentPage === 'backtest' ? 'active' : ''}`}
-            style={{
-              background: currentPage === 'backtest' ? 'var(--bg-tertiary)' : 'none',
-              border: 'none',
-              color: currentPage === 'backtest' ? 'var(--accent-gold)' : 'var(--text-muted)',
-              padding: '4px 12px',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              outline: 'none'
-            }}
-          >
-            🧪 Backtester Panel
-          </button>
-        </div>
+        {!isMobileView && (
+          <div className="page-switcher-nav" style={{ display: 'flex', gap: '8px', background: 'rgba(0, 0, 0, 0.2)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)', height: '38px', alignItems: 'center' }}>
+            <button 
+              onClick={() => setCurrentPage('desk')} 
+              className={`nav-btn ${currentPage === 'desk' ? 'active' : ''}`}
+              style={{
+                background: currentPage === 'desk' ? 'var(--bg-tertiary)' : 'none',
+                border: 'none',
+                color: currentPage === 'desk' ? 'var(--accent-gold)' : 'var(--text-muted)',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                outline: 'none'
+              }}
+            >
+              📊 Trading Desk
+            </button>
+            <button 
+              onClick={() => setCurrentPage('ledger')} 
+              className={`nav-btn ${currentPage === 'ledger' ? 'active' : ''}`}
+              style={{
+                background: currentPage === 'ledger' ? 'var(--bg-tertiary)' : 'none',
+                border: 'none',
+                color: currentPage === 'ledger' ? 'var(--accent-gold)' : 'var(--text-muted)',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                outline: 'none'
+              }}
+            >
+              📜 Signals Ledger
+              {unreadSignals > 0 && (
+                <span style={{
+                  background: 'var(--accent-gold)',
+                  color: '#000000',
+                  padding: '1px 5px',
+                  borderRadius: '8px',
+                  fontSize: '0.62rem',
+                  fontWeight: '900',
+                  lineHeight: 1
+                }}>
+                  {unreadSignals}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={() => setCurrentPage('backtest')} 
+              className={`nav-btn ${currentPage === 'backtest' ? 'active' : ''}`}
+              style={{
+                background: currentPage === 'backtest' ? 'var(--bg-tertiary)' : 'none',
+                border: 'none',
+                color: currentPage === 'backtest' ? 'var(--accent-gold)' : 'var(--text-muted)',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                outline: 'none'
+              }}
+            >
+              🧪 Backtester Panel
+            </button>
+          </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           {/* Compact Header Metrics */}
@@ -882,10 +1121,221 @@ export default function App() {
         </div>
       </header>
 
-      {/* Page Content Rendering */}
-      {currentPage === 'desk' && (
-        /* Main Grid */
-        <main className="main-layout">
+      {isMobileView ? (
+        <main className="mobile-main-layout">
+          {activeMobileTab === 'desk' && (
+            <div className="mobile-desk-view">
+              <div className="mobile-chart-tabs-bar">
+                <button onClick={() => setActiveMobileChart('spot')} className={activeMobileChart === 'spot' ? 'active' : ''}>📈 SPOT</button>
+                <button onClick={() => setActiveMobileChart('ce')} className={activeMobileChart === 'ce' ? 'active' : ''}>🟢 CALL (CE)</button>
+                <button onClick={() => setActiveMobileChart('pe')} className={activeMobileChart === 'pe' ? 'active' : ''}>🟡 PUT (PE)</button>
+              </div>
+              <div className="mobile-chart-viewport glass-card">
+                {activeMobileChart === 'spot' && (
+                  <div className="mobile-chart-wrapper" style={{ height: '360px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', alignItems: 'center' }}>
+                      <span className="scrip-badge">{config.active_scrip.split('|')[1]}</span>
+                      <strong className="mobile-price">₹{activeLivePrice > 0 ? activeLivePrice.toFixed(2) : '...'}</strong>
+                    </div>
+                    <div style={{ flexGrow: 1, position: 'relative', minHeight: '0' }}>
+                      <RealTimeChart candles={candles} scrip={config.active_scrip} theme={theme} />
+                    </div>
+                  </div>
+                )}
+                {activeMobileChart === 'ce' && (
+                  <div className="mobile-chart-wrapper" style={{ height: '360px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', alignItems: 'center' }}>
+                      <span className="scrip-badge CE" style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)' }}>CALL {activeStrike || ''}</span>
+                      <strong className="mobile-price CE" style={{ color: 'var(--accent-green)' }}>₹{callGreeks.price.toFixed(2)}</strong>
+                    </div>
+                    <div style={{ flexGrow: 1, position: 'relative', minHeight: '0' }}>
+                      <RealTimeChart candles={callCandles} scrip={`${config.active_scrip.split('|')[1]} CE`} isOptionChart={true} optionType="CE" theme={theme} />
+                    </div>
+                  </div>
+                )}
+                {activeMobileChart === 'pe' && (
+                  <div className="mobile-chart-wrapper" style={{ height: '360px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', alignItems: 'center' }}>
+                      <span className="scrip-badge PE" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-gold)' }}>PUT {activeStrike || ''}</span>
+                      <strong className="mobile-price PE" style={{ color: 'var(--accent-gold)' }}>₹{putGreeks.price.toFixed(2)}</strong>
+                    </div>
+                    <div style={{ flexGrow: 1, position: 'relative', minHeight: '0' }}>
+                      <RealTimeChart candles={putCandles} scrip={`${config.active_scrip.split('|')[1]} PE`} isOptionChart={true} optionType="PE" theme={theme} />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="mobile-ticket-section">
+                {activeTicketJsx}
+              </div>
+            </div>
+          )}
+
+          {activeMobileTab === 'watch' && (
+            <div className="mobile-watch-view" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <WatchList
+                activeScrip={config.active_scrip}
+                onSelectScrip={(scrip) => handleUpdateConfig({ ...config, active_scrip: scrip })}
+                prices={prices}
+                lastSignals={lastSignals}
+              />
+              <ConfigPanel
+                config={config}
+                onUpdateConfig={handleUpdateConfig}
+                onResetSimulation={handleResetSimulation}
+                onRunBacktest={handleRunBacktest}
+                baseUrl={BASE_URL}
+              />
+            </div>
+          )}
+
+          {activeMobileTab === 'greeks' && (
+            <div className="mobile-greeks-view" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {metrics.safety_alert && (
+                <div className="glass-card sidebar-widget safety-shield-widget" style={{
+                  border: `1px solid ${
+                    metrics.safety_alert.status === 'CRITICAL' ? 'rgba(239, 68, 68, 0.4)' :
+                    metrics.safety_alert.status === 'WARNING' ? 'rgba(245, 158, 11, 0.4)' :
+                    'rgba(16, 185, 129, 0.3)'
+                  }`,
+                  background: `linear-gradient(135deg, ${
+                    metrics.safety_alert.status === 'CRITICAL' ? 'rgba(239, 68, 68, 0.05)' :
+                    metrics.safety_alert.status === 'WARNING' ? 'rgba(245, 158, 11, 0.04)' :
+                    'rgba(16, 185, 129, 0.03)'
+                  }, rgba(15, 23, 42, 0.65))`,
+                  boxShadow: `0 8px 32px 0 ${
+                    metrics.safety_alert.status === 'CRITICAL' ? 'rgba(239, 68, 68, 0.08)' :
+                    metrics.safety_alert.status === 'WARNING' ? 'rgba(245, 158, 11, 0.06)' :
+                    'rgba(16, 185, 129, 0.04)'
+                  }`
+                }}>
+                  <div className="widget-header">
+                    <ShieldAlert size={14} className="widget-icon red" />
+                    <h4>Market Safety Shield ({metrics.safety_alert.status})</h4>
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '4px 0 10px 0', lineHeight: '1.4' }}>
+                    {metrics.safety_alert.reason}
+                  </p>
+                  {metrics.safety_alert.action_plan && (
+                    <div className="action-plan-box" style={{ background: 'rgba(255,255,255,0.02)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <span style={{ fontSize: '0.62rem', fontWeight: '800', color: 'var(--accent-gold)', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>Action Plan:</span>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-main)', margin: 0, lineHeight: '1.3' }}>{metrics.safety_alert.action_plan}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="glass-card sidebar-widget" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="widget-header">
+                  <Sliders size={14} className="widget-icon blue" />
+                  <h4>ATM Option Greeks</h4>
+                </div>
+                <div className="strike-lock-banner" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span className="label" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Strike lock:</span>
+                  <strong className="value" style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>{activeStrike ? `${config.active_scrip.split('|')[1].replace('50', '').trim()} ${activeStrike}` : 'Pending Ticks...'}</strong>
+                </div>
+                <div className="greeks-table-container">
+                  <table className="greeks-comparison-table">
+                    <thead>
+                      <tr>
+                        <th>Greek</th>
+                        <th className="ce-col" style={{ color: 'var(--accent-green)' }}>CALL (CE)</th>
+                        <th className="pe-col" style={{ color: 'var(--accent-gold)' }}>PUT (PE)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Premium</strong></td>
+                        <td className="ce-val" style={{ color: 'var(--accent-green)' }}>₹{callGreeks.price.toFixed(2)}</td>
+                        <td className="pe-val" style={{ color: 'var(--accent-gold)' }}>₹{putGreeks.price.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Delta (Δ)</strong></td>
+                        <td className="ce-val">+{callGreeks.delta.toFixed(3)}</td>
+                        <td className="pe-val">{putGreeks.delta.toFixed(3)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Theta (Θ)</strong></td>
+                        <td className="red-text" style={{ color: 'var(--accent-red)' }}>₹{callGreeks.theta.toFixed(3)}</td>
+                        <td className="red-text" style={{ color: 'var(--accent-red)' }}>₹{putGreeks.theta.toFixed(3)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Gamma (Γ)</strong></td>
+                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{callGreeks.gamma.toFixed(5)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{putGreeks.gamma.toFixed(5)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Vega (ν)</strong></td>
+                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{callGreeks.vega.toFixed(3)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: '500' }}>{putGreeks.vega.toFixed(3)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {recentSignalsJsx}
+            </div>
+          )}
+
+          {activeMobileTab === 'ledger' && (
+            <div className="mobile-ledger-view">
+              <SignalsLedger signals={signalsHistory} />
+            </div>
+          )}
+
+          {activeMobileTab === 'backtest' && (
+            <div className="mobile-backtest-view">
+              <BacktestPanel theme={theme} baseUrl={BASE_URL} />
+            </div>
+          )}
+
+          {/* Bottom Space for Navigation Spacer */}
+          <div className="mobile-bottom-nav-spacer" style={{ height: '75px' }} />
+
+          {/* Mobile Bottom Navigation Menu */}
+          <nav className="mobile-bottom-nav">
+            <button 
+              onClick={() => handleMobileTabChange('desk')} 
+              className={activeMobileTab === 'desk' ? 'active' : ''}
+            >
+              <TrendingUp size={20} />
+              <span>Desk</span>
+            </button>
+            <button 
+              onClick={() => handleMobileTabChange('watch')} 
+              className={activeMobileTab === 'watch' ? 'active' : ''}
+            >
+              <List size={20} />
+              <span>Watch</span>
+            </button>
+            <button 
+              onClick={() => handleMobileTabChange('greeks')} 
+              className={activeMobileTab === 'greeks' ? 'active' : ''}
+            >
+              <Sliders size={20} />
+              <span>Greeks</span>
+            </button>
+            <button 
+              onClick={() => handleMobileTabChange('ledger')} 
+              className={activeMobileTab === 'ledger' ? 'active' : ''}
+            >
+              <FileText size={20} />
+              <span>Ledger</span>
+            </button>
+            <button 
+              onClick={() => handleMobileTabChange('backtest')} 
+              className={activeMobileTab === 'backtest' ? 'active' : ''}
+            >
+              <BarChart2 size={20} />
+              <span>Backtest</span>
+            </button>
+          </nav>
+        </main>
+      ) : (
+        currentPage === 'desk' && (
+          /* Main Grid */
+          <main className="main-layout">
         {/* Left Side Drawers */}
         <section className="left-panel">
           <WatchList
@@ -1181,188 +1631,8 @@ export default function App() {
             </div>
           )}
 
-          {/* Signal / Recommendation Ticket */}
-          <div className="glass-card sidebar-widget">
-            <div className="widget-header">
-              <Zap size={14} className="widget-icon gold" />
-              <h4>Strategy Signal Ticket</h4>
-            </div>
-
-            {activeOptionSignal ? (
-              <div className={`signal-ticket active ${activeOptionSignal.signal_type.toLowerCase()}`}>
-                <div className="ticket-badge-row">
-                  <span className={`ticket-badge ${activeOptionSignal.signal_type.toLowerCase()}`}>
-                    {activeOptionSignal.signal_type === 'BULLISH' ? '🟢 BUY CALL (CE)' : '🔴 BUY PUT (PE)'}
-                  </span>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                    <span className="ticket-time" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
-                      {activeOptionSignal.date ? `${formatSignalDate(activeOptionSignal.date)} ` : ''}
-                      {activeOptionSignal.time}
-                    </span>
-                    <span className="ticket-elapsed-time" style={{ color: getElapsedColor() }}>
-                      {getElapsedString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
-                  <div className="ticket-contract-name" style={{ margin: 0 }}>
-                    {activeOptionSignal.contract_name}
-                  </div>
-                  {(() => {
-                    const badge = getSourceBadge(activeOptionSignal.source);
-                    return (
-                      <span style={{
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        fontSize: '0.6rem',
-                        fontWeight: '800',
-                        whiteSpace: 'nowrap',
-                        ...badge.style
-                      }}>
-                        {badge.text}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                <div className="ticket-expiry-row" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', gap: '5px' }}>
-                  <span>Expiry:</span>
-                  <strong style={{ color: 'var(--text-main)' }}>{activeOptionSignal.expiry || '—'}</strong>
-                </div>
-
-                <div className="ticket-metrics-grid">
-                  <div className="ticket-metric">
-                    <span className="m-label">EST. ENTRY</span>
-                    <span className="m-val">₹{activeOptionSignal.opt_entry.toFixed(1)}</span>
-                  </div>
-                  <div className="ticket-metric">
-                    <span className="m-label">TARGET</span>
-                    <span className="m-val green-val">₹{activeOptionSignal.opt_tp.toFixed(1)}</span>
-                  </div>
-                  <div className="ticket-metric">
-                    <span className="m-label">STOP LOSS</span>
-                    <span className="m-val red-val">₹{activeOptionSignal.opt_sl.toFixed(1)}</span>
-                  </div>
-                </div>
-
-                {/* Checklist Breakdown */}
-                {activeOptionSignal.checklist_details && (
-                  <div className="ticket-checklist">
-                    <div className="checklist-title">Checklist ({activeOptionSignal.checklist_score}/7 Met):</div>
-                    <div className="checklist-items-grid">
-                      {Object.entries(activeOptionSignal.checklist_details).map(([condName, passed]) => (
-                        <div key={condName} className={`checklist-item-dot ${passed ? 'passed' : 'failed'}`} title={condName}>
-                          <span className="dot"></span>
-                          <span className="label">{condName.split(' ')[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : blockedSignal ? (
-              <div className="signal-ticket blocked" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div className="ticket-badge-row">
-                  <span className="ticket-badge warning">
-                    ⚠️ Setup Blocked
-                  </span>
-                  <button onClick={() => setBlockedSignal(null)} className="dismiss-btn">Dismiss</button>
-                </div>
-                <div className="ticket-contract-name font-warning" style={{ fontSize: '0.82rem', fontWeight: 'bold' }}>
-                  {blockedSignal.contract_name} Setup Filtered
-                </div>
-                <p className="blocked-reasons-text" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: 0 }}>
-                  Reasons: {blockedSignal.reasons.join(', ')}
-                </p>
-              </div>
-            ) : (
-              <div className="signal-ticket empty">
-                <div className="radar-animation">
-                  <div className="radar-circle circle-1"></div>
-                  <div className="radar-circle circle-2"></div>
-                  <div className="radar-circle circle-3"></div>
-                  <Activity size={24} className="radar-icon" />
-                </div>
-                <h5>Scanning Market Data</h5>
-                <p>Monitoring {config.active_scrip.split('|')[1]} spot price against VWAP bands...</p>
-              </div>
-            )}
-          </div>
-
-          {/* Top 3 Signals Widget */}
-          <div className="glass-card sidebar-widget">
-            <div className="widget-header">
-              <Activity size={14} className="widget-icon gold" style={{ color: 'var(--accent-gold)' }} />
-              <h4>Recent Signals (Top 3)</h4>
-              <button 
-                onClick={() => setCurrentPage('ledger')}
-                style={{ 
-                  marginLeft: 'auto', 
-                  fontSize: '0.7rem', 
-                  color: 'var(--accent-gold)', 
-                  background: 'none', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  fontWeight: 'bold',
-                  outline: 'none'
-                }}
-              >
-                View Ledger ➔
-              </button>
-            </div>
-            
-            <div className="recent-signals-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-              {signalsHistory.slice(0, 3).map((sig, idx) => {
-                const isBull = sig.signal_type === 'BULLISH';
-                return (
-                  <div 
-                    key={idx}
-                    onClick={() => {
-                      setActiveOptionSignal(sig);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 10px',
-                      background: isBull ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 68, 85, 0.04)',
-                      border: '1px solid ' + (isBull ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 68, 85, 0.12)'),
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    className="recent-signal-row"
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
-                        {sig.contract_name}
-                      </span>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                        Trigger: <strong style={{ color: 'var(--text-main)' }}>₹{sig.opt_entry.toFixed(1)}</strong> | Time: {sig.time}
-                      </span>
-                    </div>
-                    
-                    <span style={{
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      background: isBull ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: isBull ? 'var(--accent-green)' : 'var(--accent-red)',
-                      fontSize: '0.7rem',
-                      fontWeight: '800'
-                    }}>
-                      {isBull ? 'CE' : 'PE'}
-                    </span>
-                  </div>
-                );
-              })}
-              {signalsHistory.length === 0 && (
-                <div style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-dark)', padding: '10px 0' }}>
-                  No signals generated yet.
-                </div>
-              )}
-            </div>
-          </div>
+          {activeTicketJsx}
+          {recentSignalsJsx}
 
 
 
@@ -1421,11 +1691,12 @@ export default function App() {
 
         </section>
       </main>
+      )
       )}
-      {currentPage === 'ledger' && (
+      {!isMobileView && currentPage === 'ledger' && (
         <SignalsLedger signals={signalsHistory} />
       )}
-      {currentPage === 'backtest' && (
+      {!isMobileView && currentPage === 'backtest' && (
         <BacktestPanel theme={theme} baseUrl={BASE_URL} />
       )}
 
