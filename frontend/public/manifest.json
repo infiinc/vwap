@@ -1,0 +1,24 @@
+{
+  "short_name": "LEO VWAP",
+  "name": "LEO vwap option",
+  "description": "Algorithmic Intraday Options Strategy Dashboard",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a0f1a",
+  "theme_color": "#0a0f1a",
+  "display": "standalone",
+  "orientation": "portrait"
+}

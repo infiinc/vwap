@@ -153,6 +153,10 @@ class GlobalState:
         self.active_safety_alert = None
         self.signals_history = [] # Keep a log of all signals generated
         self.load_signals_from_file() # Load saved signals from disk!
+        self.telegram_token = ""
+        self.telegram_chat_id = ""
+        self.telegram_enabled = False
+        self.load_telegram_config()
         
         # Option Premium and Greeks state
         self.active_strike = None
@@ -214,9 +218,66 @@ class GlobalState:
         except Exception as e:
             logger.error(f"Error loading signals from file: {e}")
 
+    def load_telegram_config(self):
+        try:
+            import os
+            filepath = os.path.join(os.path.dirname(__file__), "telegram_config.json")
+            if os.path.exists(filepath):
+                with open(filepath, "r") as f:
+                    data = json.load(f)
+                    self.telegram_token = data.get("telegram_token", "")
+                    self.telegram_chat_id = data.get("telegram_chat_id", "")
+                    self.telegram_enabled = data.get("telegram_enabled", False)
+                logger.info("Loaded Telegram configuration from telegram_config.json.")
+        except Exception as e:
+            logger.error(f"Error loading telegram config: {e}")
+
+    def save_telegram_config(self):
+        try:
+            import os
+            filepath = os.path.join(os.path.dirname(__file__), "telegram_config.json")
+            with open(filepath, "w") as f:
+                json.dump({
+                    "telegram_token": self.telegram_token,
+                    "telegram_chat_id": self.telegram_chat_id,
+                    "telegram_enabled": self.telegram_enabled
+                }, f, indent=4)
+            logger.info("Saved Telegram configuration to telegram_config.json.")
+        except Exception as e:
+            logger.error(f"Error saving telegram config: {e}")
+
 state = GlobalState()
 
+def send_telegram_notification(message: str):
+    if not state.telegram_enabled or not state.telegram_token or not state.telegram_chat_id:
+        return
+    
+    def _send():
+        try:
+            import requests
+            url = f"https://api.telegram.org/bot{state.telegram_token}/sendMessage"
+            payload = {
+                "chat_id": state.telegram_chat_id,
+                "text": message,
+                "parse_mode": "HTML"
+            }
+            res = requests.post(url, json=payload, timeout=5)
+            if not res.ok:
+                logger.error(f"Telegram notification failed: {res.text}")
+            else:
+                logger.info("Telegram notification sent successfully.")
+        except Exception as e:
+            logger.error(f"Error sending Telegram notification: {e}")
+            
+    import threading
+    threading.Thread(target=_send, daemon=True).start()
+
 # Pydantic models for REST endpoints
+class TelegramConfigModel(BaseModel):
+    telegram_token: str
+    telegram_chat_id: str
+    telegram_enabled: bool
+
 class ConfigModel(BaseModel):
     mode: str
     active_scrip: str
@@ -522,6 +583,22 @@ async def handle_incoming_tick(tick: dict):
                 }),
                 loop
             )
+            
+            # Send Telegram Alert
+            action_text = "🟢 BUY CALL (CE)" if signal_data["signal_type"] == "BULLISH" else "🔴 BUY PUT (PE)"
+            tg_message = (
+                f"🦁 <b>LEO vwap option Alert!</b>\n"
+                f"----------------------------------------\n"
+                f"<b>Asset:</b> {scrip.split('|')[-1].strip()}\n"
+                f"<b>Signal:</b> {action_text}\n"
+                f"<b>Contract:</b> {signal_data['contract_name']}\n\n"
+                f"<b>Est. Entry:</b> ₹{signal_data['opt_entry']:.1f}\n"
+                f"<b>Target (TP):</b> ₹{signal_data['opt_tp']:.1f}\n"
+                f"<b>Stop Loss (SL):</b> ₹{signal_data['opt_sl']:.1f}\n"
+                f"<b>Checklist Score:</b> {signal_data['checklist_score']}/7 Met\n"
+                f"<b>Time:</b> {signal_data['time']}\n"
+            )
+            send_telegram_notification(tg_message)
                 
         # Auto-Trading Execution
         if signal in ["BUY", "SELL"] and state.auto_trade:
@@ -921,6 +998,23 @@ class FyersLoginModel(BaseModel):
     auth_code: str
 
 # REST Endpoints
+@app.get("/api/telegram")
+def get_telegram_config():
+    return {
+        "telegram_token": state.telegram_token,
+        "telegram_chat_id": state.telegram_chat_id,
+        "telegram_enabled": state.telegram_enabled
+    }
+
+@app.post("/api/telegram")
+def save_telegram_config(config: TelegramConfigModel):
+    state.telegram_token = config.telegram_token
+    state.telegram_chat_id = config.telegram_chat_id
+    state.telegram_enabled = config.telegram_enabled
+    state.save_telegram_config()
+    ui_log(f"Telegram Settings updated: Enabled={state.telegram_enabled}")
+    return {"status": "success"}
+
 @app.get("/api/config")
 def get_config():
     return {
@@ -1451,6 +1545,22 @@ async def trigger_mock_signal(signal_type: str = "BULLISH"):
         state.signals_history.pop(0)
     state.save_signals_to_file()
     await broadcast_payload(payload)
+    
+    # Send Telegram alert for mock/test signals too
+    action_text = "🟢 BUY CALL (CE)" if signal_type == "BULLISH" else "🔴 BUY PUT (PE)"
+    tg_message = (
+        f"🦁 <b>LEO vwap option (TEST)</b>\n"
+        f"----------------------------------------\n"
+        f"<b>Asset:</b> {state.active_scrip.split('|')[-1].strip()}\n"
+        f"<b>Signal:</b> {action_text}\n"
+        f"<b>Contract:</b> {option_name}\n\n"
+        f"<b>Est. Entry:</b> ₹{opt_entry:.1f}\n"
+        f"<b>Target (TP):</b> ₹{opt_tp:.1f}\n"
+        f"<b>Stop Loss (SL):</b> ₹{opt_sl:.1f}\n"
+        f"<b>Checklist Score:</b> {checklist_score}/7 Met\n"
+    )
+    send_telegram_notification(tg_message)
+    
     return {"status": "success", "data": payload["data"]}
 
 

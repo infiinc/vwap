@@ -107,6 +107,29 @@ const playNotificationSound = () => {
   }
 };
 
+const triggerLocalNotification = (signal) => {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    try {
+      new Notification(`🟢 LEO VWAP ${signal.signal_type}: ${signal.contract_name}`, {
+        body: `Entry: ₹${signal.opt_entry.toFixed(1)} | Target: ₹${signal.opt_tp.toFixed(1)} | SL: ₹${signal.opt_sl.toFixed(1)}`,
+        icon: '/favicon.svg',
+        silent: true
+      });
+    } catch (err) {
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.showNotification(`🟢 LEO VWAP ${signal.signal_type}: ${signal.contract_name}`, {
+            body: `Entry: ₹${signal.opt_entry.toFixed(1)} | Target: ₹${signal.opt_tp.toFixed(1)} | SL: ₹${signal.opt_sl.toFixed(1)}`,
+            icon: '/favicon.svg',
+            silent: true
+          });
+        });
+      }
+    }
+  }
+};
+
 export default function App() {
   const [config, setConfig] = useState({
     mode: 'FYERS',
@@ -199,6 +222,13 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('vwap-app-theme', theme);
   }, [theme]);
+
+  // Request browser notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
 
   // Live ticking timer to update elapsed signal duration
   const [nowTime, setNowTime] = useState(() => Date.now());
@@ -464,6 +494,7 @@ export default function App() {
               
               // Play chime sound and trigger toast notifications
               playNotificationSound();
+              triggerLocalNotification(data);
               
               const newToast = {
                 id: Date.now() + Math.random(),

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Sliders, Shield, Play, RefreshCw } from 'lucide-react';
 
 export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation, onRunBacktest, baseUrl = 'http://127.0.0.1:8000' }) {
@@ -23,6 +23,45 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
   const [loginLoading, setLoginLoading] = useState(false);
   const [fyersError, setFyersError] = useState('');
   const [fyersLoading, setFyersLoading] = useState(false);
+
+  const [telegramConfig, setTelegramConfig] = useState({
+    telegram_token: '',
+    telegram_chat_id: '',
+    telegram_enabled: false
+  });
+  const [telegramSaved, setTelegramSaved] = useState(false);
+
+  useEffect(() => {
+    fetchTelegramConfig();
+  }, [baseUrl]);
+
+  const fetchTelegramConfig = async () => {
+    try {
+      const res = await fetch(`${baseUrl}/api/telegram`);
+      const data = await res.json();
+      if (res.ok) {
+        setTelegramConfig(data);
+      }
+    } catch (err) {
+      console.error('Error fetching Telegram config:', err);
+    }
+  };
+
+  const handleTelegramSave = async () => {
+    try {
+      const res = await fetch(`${baseUrl}/api/telegram`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(telegramConfig)
+      });
+      if (res.ok) {
+        setTelegramSaved(true);
+        setTimeout(() => setTelegramSaved(false), 3000);
+      }
+    } catch (err) {
+      console.error('Error saving Telegram config:', err);
+    }
+  };
 
   const handleConfigChange = (key, val) => {
     // Switch to Shoonya Broker Live
@@ -346,6 +385,71 @@ export default function ConfigPanel({ config, onUpdateConfig, onResetSimulation,
           <span className="slider-round"></span>
         </label>
       </div>
+
+      {/* Telegram Notifications Settings */}
+      <hr style={{ border: '0', borderTop: '1px solid var(--border-color)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="var(--accent-blue)">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.67-.52.36-.99.53-1.41.52-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.42-1.4-.88.03-.24.37-.49 1.02-.74 3.99-1.74 6.66-2.88 8.01-3.43 3.81-1.56 4.6-.1.02z" fill="var(--accent-blue)" />
+        </svg>
+        <h3 style={{ margin: 0 }}>Telegram Alerts</h3>
+      </div>
+
+      <div className="toggle-container">
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Enable Telegram Alerts</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>Sends signals to your bot</span>
+        </div>
+        <label className="toggle-switch">
+          <input
+            type="checkbox"
+            checked={telegramConfig.telegram_enabled}
+            onChange={(e) => setTelegramConfig({ ...telegramConfig, telegram_enabled: e.target.checked })}
+          />
+          <span className="slider-round"></span>
+        </label>
+      </div>
+
+      {telegramConfig.telegram_enabled && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', background: 'rgba(255, 255, 255, 0.01)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '10px' }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.7rem' }}>Bot Token</label>
+            <input
+              type="text"
+              placeholder="e.g. 123456:ABC-DEF..."
+              value={telegramConfig.telegram_token}
+              onChange={(e) => setTelegramConfig({ ...telegramConfig, telegram_token: e.target.value })}
+              className="input-glow-style"
+              style={{ fontSize: '0.75rem', padding: '6px 10px' }}
+            />
+          </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label style={{ fontSize: '0.7rem' }}>Chat ID</label>
+            <input
+              type="text"
+              placeholder="e.g. -1001234567 or 9876543"
+              value={telegramConfig.telegram_chat_id}
+              onChange={(e) => setTelegramConfig({ ...telegramConfig, telegram_chat_id: e.target.value })}
+              className="input-glow-style"
+              style={{ fontSize: '0.75rem', padding: '6px 10px' }}
+            />
+          </div>
+          <button 
+            onClick={handleTelegramSave} 
+            className="btn-secondary" 
+            style={{ 
+              marginTop: '5px', 
+              fontSize: '0.75rem', 
+              padding: '6px', 
+              background: telegramSaved ? 'rgba(16, 185, 129, 0.1)' : '', 
+              borderColor: telegramSaved ? 'var(--accent-green)' : '',
+              color: telegramSaved ? 'var(--accent-green)' : ''
+            }}
+          >
+            {telegramSaved ? '✓ Config Saved' : 'Save Telegram Config'}
+          </button>
+        </div>
+      )}
 
       <hr style={{ border: '0', borderTop: '1px solid var(--border-color)' }} />
 
