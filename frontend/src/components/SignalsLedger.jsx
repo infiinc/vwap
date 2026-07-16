@@ -580,12 +580,19 @@ export default function SignalsLedger({ signals }) {
 
                     // Date & Time formatting
                     let formattedDateTime = `${dateStr} ${timeStr}`;
-                    try {
-                      const d = new Date(`${dateStr}T${timeStr}`);
-                      if (!isNaN(d.getTime())) {
-                        formattedDateTime = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + timeStr;
-                      }
-                    } catch {}
+                    if (sig.timestamp) {
+                      try {
+                        const d = new Date(sig.timestamp * 1000);
+                        formattedDateTime = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                      } catch {}
+                    } else {
+                      try {
+                        const d = new Date(`${dateStr}T${timeStr}`);
+                        if (!isNaN(d.getTime())) {
+                          formattedDateTime = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + timeStr;
+                        }
+                      } catch {}
+                    }
 
                     return (
                       <tr 
@@ -669,7 +676,20 @@ export default function SignalsLedger({ signals }) {
                   <span style={{ fontWeight: 'bold' }}>
                     {selectedSignal.signal_type === 'BULLISH' ? '🟢 CALL BUY (CE)' : '🔴 PUT BUY (PE)'}
                   </span>
-                  <span>{selectedSignal.date} {selectedSignal.time}</span>
+                  <span>
+                    {selectedSignal.timestamp ? 
+                      new Date(selectedSignal.timestamp * 1000).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                      }) : 
+                      `${selectedSignal.date} ${selectedSignal.time}`
+                    }
+                  </span>
                 </div>
               </div>
 

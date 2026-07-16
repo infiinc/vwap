@@ -394,7 +394,13 @@ export default function App() {
             const sortedSigsInit = (data.signals_history || []).slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             setSignalsHistory(sortedSigsInit);
             if (sortedSigsInit.length > 0) {
-              setActiveOptionSignal(sortedSigsInit[0]);
+              const latestSig = sortedSigsInit[0];
+              const sigTimeMs = latestSig.timestamp ? latestSig.timestamp * 1000 : 0;
+              if (sigTimeMs > 0 && (Date.now() - sigTimeMs) < 14400000) {
+                setActiveOptionSignal(latestSig);
+              } else {
+                setActiveOptionSignal(null);
+              }
             }
             setMetrics(data.metrics);
             setLogs(data.logs);
@@ -551,7 +557,13 @@ export default function App() {
             const sortedSigsReset = (data.signals_history || []).slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             setSignalsHistory(sortedSigsReset);
             if (sortedSigsReset.length > 0) {
-              setActiveOptionSignal(sortedSigsReset[0]);
+              const latestSig = sortedSigsReset[0];
+              const sigTimeMs = latestSig.timestamp ? latestSig.timestamp * 1000 : 0;
+              if (sigTimeMs > 0 && (Date.now() - sigTimeMs) < 14400000) {
+                setActiveOptionSignal(latestSig);
+              } else {
+                setActiveOptionSignal(null);
+              }
             }
             break;
 
@@ -789,8 +801,17 @@ export default function App() {
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <span className="ticket-time" style={{ fontSize: '0.72rem', fontWeight: 600 }}>
-                {activeOptionSignal.date ? `${formatSignalDate(activeOptionSignal.date)} ` : ''}
-                {activeOptionSignal.time}
+                {activeOptionSignal.timestamp ? 
+                  new Date(activeOptionSignal.timestamp * 1000).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                  }) : 
+                  `${activeOptionSignal.date ? `${formatSignalDate(activeOptionSignal.date)} ` : ''}${activeOptionSignal.time}`
+                }
               </span>
               <span className="ticket-elapsed-time" style={{ color: getElapsedColor() }}>
                 {getElapsedString()}
@@ -942,7 +963,7 @@ export default function App() {
                   {sig.contract_name}
                 </span>
                 <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                  Trigger: <strong style={{ color: 'var(--text-main)' }}>₹{sig.opt_entry.toFixed(1)}</strong> | Time: {sig.time}
+                  Trigger: <strong style={{ color: 'var(--text-main)' }}>₹{sig.opt_entry.toFixed(1)}</strong> | Time: {sig.timestamp ? new Date(sig.timestamp * 1000).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : sig.time}
                 </span>
               </div>
               
