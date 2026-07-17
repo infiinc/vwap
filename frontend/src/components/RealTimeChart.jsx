@@ -113,12 +113,20 @@ export default function RealTimeChart({
           const timestamp = typeof time === 'number' ? time : (time.timestamp || time.time);
           if (!timestamp) return '';
           const date = new Date(timestamp * 1000);
-          return date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Asia/Kolkata'
-          });
+          try {
+            return date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+              timeZone: 'Asia/Kolkata'
+            });
+          } catch (e) {
+            return date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
+            });
+          }
         }
       },
       localization: {
@@ -126,13 +134,22 @@ export default function RealTimeChart({
           const timestamp = typeof time === 'number' ? time : (time.timestamp || time.time);
           if (!timestamp) return '';
           const date = new Date(timestamp * 1000);
-          return date.toLocaleTimeString('en-IN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-            timeZone: 'Asia/Kolkata'
-          });
+          try {
+            return date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+              timeZone: 'Asia/Kolkata'
+            });
+          } catch (e) {
+            return date.toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            });
+          }
         }
       },
       crosshair: {

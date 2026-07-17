@@ -207,22 +207,39 @@ export default function App() {
 
   // Theme configuration state
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('vwap-app-theme');
-    if (saved === 'nordic-light') {
-      return 'tradingview-light';
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('vwap-app-theme') : null;
+      if (saved === 'nordic-light') {
+        return 'tradingview-light';
+      }
+      return saved || 'oceanic';
+    } catch (e) {
+      console.warn("localStorage not available:", e);
+      return 'oceanic';
     }
-    return saved || 'oceanic';
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('vwap-app-theme', theme);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('vwap-app-theme', theme);
+      }
+    } catch (e) {
+      console.warn("Could not save theme to localStorage:", e);
+    }
   }, [theme]);
 
   // Request browser notification permission
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window && typeof Notification.requestPermission === 'function' && Notification.permission === 'default') {
+        Notification.requestPermission().catch(err => {
+          console.warn("Notification permission request rejected:", err);
+        });
+      }
+    } catch (e) {
+      console.warn("Could not request notification permission:", e);
     }
   }, []);
 

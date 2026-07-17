@@ -17,6 +17,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body>
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        var div = document.createElement('div');
+        div.style.position = 'fixed';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.width = '100%';
+        div.style.height = '100%';
+        div.style.backgroundColor = 'rgba(10, 15, 26, 0.96)';
+        div.style.color = '#ff4455';
+        div.style.padding = '25px';
+        div.style.zIndex = '999999';
+        div.style.overflow = 'auto';
+        div.style.fontFamily = 'monospace';
+        div.style.fontSize = '13px';
+        div.style.lineHeight = '1.5';
+        div.style.whiteSpace = 'pre-wrap';
+        div.innerHTML = '<h2 style="color: #ff4455; margin-top: 0;">🚨 LEO VWAP Client Crash</h2>' +
+                        '<p style="margin-bottom: 15px; color: #9ca3af;">A javascript runtime error occurred on your device. Please report this error details:</p>' +
+                        '<div style="background: rgba(0,0,0,0.4); padding: 12px; border-radius: 6px; border: 1px solid rgba(255, 68, 85, 0.2); margin-bottom: 15px;">' +
+                        '<strong>Message:</strong> ' + message + '<br>' +
+                        '<strong>URL:</strong> ' + source + '<br>' +
+                        '<strong>Line:</strong> ' + lineno + ' | <strong>Col:</strong> ' + colno + '</div>' +
+                        '<strong>Stack Trace:</strong><br>' + 
+                        '<pre style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; font-size: 11px; margin-top: 5px; overflow-x: auto;">' + 
+                        (error && error.stack ? error.stack : 'N/A') + '</pre>';
+        document.body.appendChild(div);
+        return false;
+      };
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
