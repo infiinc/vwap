@@ -16,8 +16,8 @@ const getBackendUrls = () => {
     return { base: 'https://leo-vwap.onrender.com', ws: 'wss://leo-vwap.onrender.com' };
   }
   const hostname = window.location.hostname;
-  // If not on production server, assume local setup (covers localhost, local IPs, PC hostnames, etc.)
-  const isLocalNet = hostname !== 'leo-vwap.onrender.com';
+  // If not on production server or Vercel static hosting, assume local setup (covers localhost, local IPs, PC hostnames, etc.)
+  const isLocalNet = hostname !== 'leo-vwap.onrender.com' && !hostname.endsWith('.vercel.app');
                       
   return {
     base: isLocalNet ? `http://${hostname}:8000` : 'https://leo-vwap.onrender.com',
@@ -381,8 +381,9 @@ export default function App() {
   useEffect(() => {
     const connectWS = () => {
       console.log('Connecting to websocket...');
-      const ws = new WebSocket(`${WS_URL}/ws`);
-      wsRef.current = ws;
+      try {
+        const ws = new WebSocket(`${WS_URL}/ws`);
+        wsRef.current = ws;
 
       ws.onopen = () => {
         console.log('WebSocket connection established.');
@@ -607,16 +608,23 @@ export default function App() {
         }
       };
 
-      ws.onclose = () => {
-        console.log('WebSocket disconnected. Reconnecting in 3 seconds...');
+        ws.onclose = () => {
+          console.log('WebSocket disconnected. Reconnecting in 3 seconds...');
+          setWsConnected(false);
+          setTimeout(connectWS, 3000);
+        };
+
+        ws.onerror = (err) => {
+          console.error('WebSocket error:', err);
+          try {
+            ws.close();
+          } catch (e) {}
+        };
+      } catch (err) {
+        console.error('Failed to instantiate WebSocket:', err);
         setWsConnected(false);
         setTimeout(connectWS, 3000);
-      };
-
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-        ws.close();
-      };
+      }
     };
 
     connectWS();
