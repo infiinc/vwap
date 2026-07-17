@@ -16,12 +16,8 @@ const getBackendUrls = () => {
     return { base: 'https://leo-vwap.onrender.com', ws: 'wss://leo-vwap.onrender.com' };
   }
   const hostname = window.location.hostname;
-  // Check if we are running on localhost, 127.0.0.1, or a local network IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-  const isLocalNet = hostname === 'localhost' || 
-                      hostname === '127.0.0.1' || 
-                      hostname.startsWith('192.168.') || 
-                      hostname.startsWith('10.') || 
-                      (hostname.startsWith('172.') && parseInt(hostname.split('.')[1], 10) >= 16 && parseInt(hostname.split('.')[1], 10) <= 31);
+  // If not on production server, assume local setup (covers localhost, local IPs, PC hostnames, etc.)
+  const isLocalNet = hostname !== 'leo-vwap.onrender.com';
                       
   return {
     base: isLocalNet ? `http://${hostname}:8000` : 'https://leo-vwap.onrender.com',
