@@ -538,8 +538,17 @@ Maximum Drawdown:       ${s.drawdown}%
   }
 
   return (
-    <div className="backtest-layout" style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '20px', padding: '20px', height: 'calc(100vh - 85px)', overflowY: 'auto', boxSizing: 'border-box' }}>
+    <div className="backtest-layout">
       <style>{`
+        .backtest-layout {
+          display: grid;
+          grid-template-columns: 380px 1fr;
+          gap: 20px;
+          padding: 20px;
+          height: calc(100vh - 85px);
+          overflow-y: auto;
+          box-sizing: border-box;
+        }
         .backtest-table-container {
           overflow-x: auto;
           overflow-y: auto;
@@ -588,6 +597,18 @@ Maximum Drawdown:       ${s.drawdown}%
         }
         th.num-col {
           font-family: var(--font-family) !important;
+        }
+
+        @media (max-width: 900px) {
+          .backtest-layout {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+            padding: 10px !important;
+            gap: 15px !important;
+          }
+          .backtest-table {
+            min-width: 800px !important;
+          }
         }
       `}</style>
       {/* Left panel: Control Forms */}

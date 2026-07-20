@@ -435,6 +435,98 @@ export default function SignalsLedger({ signals }) {
           background: #ffffff;
           border: 2px solid var(--bg-tertiary);
         }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+          .ledger-page-container {
+            height: auto !important;
+            overflow: visible !important;
+            padding: 8px !important;
+            gap: 12px !important;
+          }
+          .ledger-stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+            gap: 8px !important;
+          }
+          .ledger-stat-card {
+            padding: 10px !important;
+            gap: 8px !important;
+          }
+          .ledger-stat-icon {
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 8px !important;
+          }
+          .ledger-stat-icon svg {
+            width: 14px !important;
+            height: 14px !important;
+          }
+          .ledger-stat-label {
+            font-size: 0.6rem !important;
+          }
+          .ledger-stat-value {
+            font-size: 1.15rem !important;
+          }
+          .ledger-main-section {
+            flex-direction: column !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          .ledger-table-container {
+            height: auto !important;
+            max-height: 500px !important;
+          }
+          .ledger-toolbar {
+            padding: 8px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+          .ledger-filters {
+            width: 100% !important;
+          }
+          .ledger-selects {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+          }
+          .ledger-scrollable-table {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .ledger-table {
+            min-width: 500px !important;
+          }
+          
+          /* Hide non-critical columns on mobile table */
+          .ledger-table th:nth-child(1), /* Source */
+          .ledger-table td:nth-child(1),
+          .ledger-table th:nth-child(4), /* Expiry */
+          .ledger-table td:nth-child(4),
+          .ledger-table th:nth-child(6), /* Spot Price */
+          .ledger-table td:nth-child(6),
+          .ledger-table th:nth-child(8), /* Target */
+          .ledger-table td:nth-child(8),
+          .ledger-table th:nth-child(9), /* Stop Loss */
+          .ledger-table td:nth-child(9) {
+            display: none !important;
+          }
+
+          .ledger-table th {
+            padding: 8px 6px !important;
+            font-size: 0.65rem !important;
+          }
+          .ledger-table td {
+            padding: 8px 6px !important;
+            font-size: 0.72rem !important;
+          }
+          .ledger-inspector {
+            width: 100% !important;
+            height: auto !important;
+            margin-top: 10px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+          }
+        }
       `}</style>
 
       {/* Metrics Cards */}
