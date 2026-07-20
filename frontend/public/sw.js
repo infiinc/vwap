@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leo-vwap-cache-v1';
+const CACHE_NAME = 'leo-vwap-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -31,16 +31,37 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
   if (event.request.method !== 'GET') return;
-  
+
+  // Use Network-First strategy for HTML/navigation requests to avoid loading stale index.html pointing to old JS hashes
+  const isHtml = event.request.mode === 'navigate' || 
+                 (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'));
+
+  if (isHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseCopy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseCopy);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache-First strategy for other static assets (images, icons, etc.)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
       return fetch(event.request).catch(() => {
-        // Offline fallback if needed
+        // Offline fallback
       });
     })
   );
